@@ -1,0 +1,647 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Product Catalog{% endblock %}
+
+{% block content %}
+<style>
+    .upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .upload-area:hover,
+    .upload-area.drag-over {
+        border-color: #0d6efd;
+        background-color: #e9ecef;
+    }
+
+    .upload-icon {
+        font-size: 2rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .preview-image-container {
+        position: relative;
+        display: inline-block;
+        margin: 0.25rem;
+    }
+
+    .preview-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .remove-image-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        border: none;
+        padding: 0;
+    }
+</style>
+<section id="products" class="container-fluid py-4">
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-secondary">Product Catalog</h5>
+            <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                <i class="bi bi-plus-lg me-2"></i>Add Product
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3 border-0" style="width: 25%;">Name</th>
+                            <th class="py-3 border-0" style="width: 25%;">Brand</th>
+                            <th class="py-3 border-0" style="width: 25%;">Features</th>
+                            <th class="py-3 border-0" style="width: 25%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for product in products %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    {% with first_image=product.images.first %}
+                                    <div class="me-3 position-relative" style="width: 40px; height: 40px;">
+                                        {% if first_image %}
+                                        <img src="{{ first_image.image.url }}"
+                                            class="rounded-3 w-100 h-100 object-fit-cover shadow-sm">
+                                        {% else %}
+                                        <div
+                                            class="bg-light rounded-3 w-100 h-100 d-flex align-items-center justify-content-center text-muted small border">
+                                            NA
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endwith %}
+                                    <span class="fw-medium text-dark">{{ product.name }}</span>
+                                </div>
+                            </td>
+                            <td class="text-secondary">{{ product.brand }}</td>
+                            <td>
+                                <span class="badge bg-light text-secondary border rounded-pill fw-normal">
+                                    {{ product.features.count }} Feature(s)
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <button
+                                        class="btn btn-sm btn-outline-primary d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
+                                        onclick="viewProduct('{{ product.id }}', '{{ product.name }}', '{{ product.brand }}', '{{ product.description|escapejs }}', [{% for img in product.images.all %}'{{ img.image.url }}',{% endfor %}], [{% for feat in product.features.all %}'{{ feat.feature|escapejs }}',{% endfor %}])"
+                                        title="View">
+                                        <i class="bi bi-eye"></i>
+                                        <span>View</span>
+                                    </button>
+                                    <button
+                                        class="btn btn-sm btn-primary d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
+                                        onclick="editProduct('{{ product.id }}', '{{ product.name }}', '{{ product.brand }}', '{{ product.description|escapejs }}', [{% for feat in product.features.all %}'{{ feat.feature|escapejs }}',{% endfor %}], [{% for img in product.images.all %}{'id': '{{ img.id|escapejs }}', 'url': '{{ img.image.url|escapejs }}'},{% endfor %}])"
+                                        title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                        <span>Edit</span>
+                                    </button>
+                                    <button type="button"
+                                        class="btn btn-sm btn-danger d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
+                                        onclick="confirmDelete('{{ product.id }}')" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                        <span>Delete</span>
+                                    </button>
+                                    <form id="delete-form-{{ product.id }}"
+                                        action="{% url 'delete-product' product.id %}" method="POST"
+                                        style="display: none;">
+                                        {% csrf_token %}
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <div class="mb-2"><i class="bi bi-box-seam display-6 opacity-50"></i></div>
+                                No products found. Click "Add Product" to get started.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block modals %}
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Add New Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="addProductForm" method="POST" action="{% url 'add-products' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Product Name</label>
+                            <input type="text" name="name" class="form-control rounded-3 py-2 bg-light border-0"
+                                placeholder="e.g. Modern Sofa" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Brand</label>
+                            <input type="text" name="brand" class="form-control rounded-3 py-2 bg-light border-0"
+                                placeholder="e.g. Weinber" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted">Description</label>
+                            <textarea name="description" class="form-control rounded-3 bg-light border-0" rows="3"
+                                placeholder="Product details..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted">Product Images</label>
+                            <input type="file" name="images" id="addImagesInput" class="d-none" accept="image/*"
+                                multiple onchange="handleFileSelect(this, 'addPreviewContainer')">
+                            <div id="addUploadArea" class="upload-area"
+                                onclick="document.getElementById('addImagesInput').click()"
+                                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                                ondrop="handleDrop(event, 'addImagesInput', 'addPreviewContainer')">
+                                <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                                <div class="fw-medium text-dark">Click or Drag images here</div>
+                                <div class="small text-muted">Supports JPG, PNG</div>
+                            </div>
+                            <div id="addPreviewContainer" class="mt-3 d-flex flex-wrap gap-2"></div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small text-muted mb-0">Features</label>
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0"
+                                    onclick="addFeatureInput('addFeaturesContainer')">
+                                    <i class="bi bi-plus-circle me-1"></i>Add Feature
+                                </button>
+                            </div>
+                            <div id="addFeaturesContainer" class="vstack gap-2">
+                                <input type="text" name="features" class="form-control rounded-3 bg-light border-0 py-2"
+                                    placeholder="Feature 1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary rounded-pill py-2 fw-medium">Save Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Product Modal -->
+<div class="modal fade" id="viewProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-body p-0 position-relative">
+                <button type="button"
+                    class="btn-close position-absolute top-0 end-0 m-4 z-3 bg-white p-2 rounded-circle shadow-sm"
+                    data-bs-dismiss="modal" aria-label="Close"></button>
+
+                <div class="row g-0">
+                    <!-- Left Column: Images -->
+                    <div class="col-lg-7 bg-light p-5 d-flex flex-column align-items-center justify-content-center">
+                        <!-- Main Image -->
+                        <div class="mb-4 w-100 shadow-sm rounded-4 overflow-hidden bg-white d-flex align-items-center justify-content-center"
+                            style="height: 400px;">
+                            <img id="viewMainImage" src="" class="img-fluid w-100 h-100 object-fit-cover"
+                                alt="Product Image">
+                        </div>
+
+                        <!-- Thumbnails -->
+                        <div class="d-flex gap-3 justify-content-center w-100 px-3" id="viewThumbnails"
+                            style="overflow-x: auto;">
+                            <!-- Thumbnails injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Details -->
+                    <div class="col-lg-5 p-5 bg-white">
+                        <div class="h-100 d-flex flex-column justify-content-center">
+                            <div class="mb-2 d-flex align-items-center gap-2">
+                                <span class="text-primary fw-bold text-uppercase small" id="viewBrand">Brand</span>
+                            </div>
+
+                            <h2 class="fw-bold mb-3 display-6" id="viewName">Product Name</h2>
+
+                            <p class="text-secondary mb-4 leading-relaxed" id="viewDescription"
+                                style="line-height: 1.6;">
+                                Description...
+                            </p>
+
+                            <h6 class="text-uppercase text-muted small fw-bold mb-3">Key Features</h6>
+                            <ul class="list-unstyled small text-secondary vstack gap-2 mb-5" id="viewFeatures">
+                                <!-- Features inserted via JS -->
+                            </ul>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="editProductForm" method="POST" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Product Name</label>
+                            <input type="text" name="name" id="editName"
+                                class="form-control rounded-3 py-2 bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Brand</label>
+                            <input type="text" name="brand" id="editBrand"
+                                class="form-control rounded-3 py-2 bg-light border-0" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted">Description</label>
+                            <textarea name="description" id="editDescription"
+                                class="form-control rounded-3 bg-light border-0" rows="3"></textarea>
+                            <input type="hidden" name="deleted_images" id="deletedImagesInput">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted">Add New Images (Appends to existing)</label>
+                            <input type="file" name="images" id="editImagesInput" class="d-none" accept="image/*"
+                                multiple onchange="handleFileSelect(this, 'editPreviewContainer')">
+                            <div id="editUploadArea" class="upload-area"
+                                onclick="document.getElementById('editImagesInput').click()"
+                                ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
+                                ondrop="handleDrop(event, 'editImagesInput', 'editPreviewContainer')">
+                                <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                                <div class="fw-medium text-dark">Click or Drag images here</div>
+                                <div class="small text-muted">Supports JPG, PNG</div>
+                            </div>
+                            <div id="editPreviewContainer" class="mt-3 d-flex flex-wrap gap-2"></div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label small text-muted mb-0">Features (Replaces existing)</label>
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none p-0"
+                                    onclick="addFeatureInput('editFeaturesContainer')">
+                                    <i class="bi bi-plus-circle me-1"></i>Add Feature
+                                </button>
+                            </div>
+                            <div id="editFeaturesContainer" class="vstack gap-2">
+                                <!-- Features populated via JS -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-warning text-white rounded-pill py-2 fw-medium">Update
+                            Product</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addFeatureInput(containerId, value = '') {
+        const container = document.getElementById(containerId);
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'features';
+        input.value = value;
+        input.placeholder = `Feature`;
+        input.className = 'form-control rounded-3 bg-light border-0 py-2 mt-2';
+        container.appendChild(input);
+    }
+
+    function viewProduct(id, name, brand, description, images, features) {
+        document.getElementById('viewName').innerText = name;
+        document.getElementById('viewBrand').innerText = brand;
+        document.getElementById('viewDescription').innerText = description;
+
+        // Features
+        const featuresList = document.getElementById('viewFeatures');
+        featuresList.innerHTML = '';
+        if (features.length > 0) {
+            features.forEach(feat => {
+                featuresList.innerHTML += `<li><i class="bi bi-check2-circle me-2 text-primary"></i>${feat}</li>`;
+            });
+        } else {
+            featuresList.innerHTML = '<li class="text-muted fst-italic">No features listed.</li>';
+        }
+
+        // Images Logic
+        const mainImage = document.getElementById('viewMainImage');
+        const thumbnailsContainer = document.getElementById('viewThumbnails');
+        thumbnailsContainer.innerHTML = '';
+
+        if (images.length > 0) {
+            // Set first image as main
+            mainImage.src = images[0];
+
+            // Generate thumbnails
+            images.forEach((img, index) => {
+                const thumb = document.createElement('img');
+                thumb.src = img;
+                thumb.className = `rounded-3 object-fit-cover cursor-pointer border border-2 ${index === 0 ? 'border-primary' : 'border-transparent'}`;
+                thumb.style.width = '80px';
+                thumb.style.height = '80px';
+                thumb.style.cursor = 'pointer';
+
+                thumb.onclick = function () {
+                    // Update Main Image
+                    mainImage.src = img;
+
+                    // Update Active Border
+                    Array.from(thumbnailsContainer.children).forEach(t => {
+                        t.classList.remove('border-primary');
+                        t.classList.add('border-transparent');
+                    });
+                    thumb.classList.remove('border-transparent');
+                    thumb.classList.add('border-primary');
+                };
+
+                thumbnailsContainer.appendChild(thumb);
+            });
+        } else {
+            // Fallback if no images
+            mainImage.src = ''; // Or a placeholder URL
+            mainImage.alt = 'No Image Available';
+            thumbnailsContainer.innerHTML = '<span class="text-muted small">No images available</span>';
+        }
+
+        new bootstrap.Modal(document.getElementById('viewProductModal')).show();
+    }
+
+    function editProduct(id, name, brand, description, features, images) {
+        document.getElementById('editName').value = name;
+        document.getElementById('editBrand').value = brand;
+        document.getElementById('editDescription').value = description;
+        document.getElementById('deletedImagesInput').value = ''; // Reset deleted images
+
+        // Set Action URL
+        // We need a URL pattern for edit-product in urls.py, assume /products/edit/<id>/
+        // Since we don't have the URL tag here handy with ID dynamic from JS, we construct it. 
+        // Best practice is to use a data attribute or replace a placeholder.
+        // Let's assume a placeholder logic for now or update urls.py to be friendly.
+        // I will use a simple replace logic on a base URL template.
+        const form = document.getElementById('editProductForm');
+        form.action = `/products/edit/${id}/`; // Ensure this matches urls.py
+
+        // Existing Images
+        const imageContainer = document.getElementById('editPreviewContainer');
+        imageContainer.innerHTML = '';
+        if (images && images.length > 0) {
+            images.forEach(img => {
+                const div = document.createElement('div');
+                div.className = 'preview-image-container';
+                div.id = `existing-img-${img.id}`;
+                div.innerHTML = `
+                    <img src="${img.url}" class="preview-image">
+                    <button type="button" class="remove-image-btn" onclick="markImageForDeletion('${img.id}')">
+                        <i class="bi bi-x"></i>
+                    </button>
+                `;
+                imageContainer.appendChild(div);
+            });
+        }
+
+        // Reset File Input State
+        fileState['editImagesInput'] = new DataTransfer();
+        document.getElementById('editImagesInput').files = fileState['editImagesInput'].files;
+
+        // Clear New Previews (by clearing specific logic or the new-images container if created, 
+        // but since we are replacing the logic, we need to handle it in the new render logic)
+        // With my separate container logic, I should just find the new images container and clear it if it exists.
+        const newImgs = document.getElementById('editPreviewContainer').querySelector('.new-images-container');
+        if (newImgs) newImgs.innerHTML = '';
+
+        // Features
+        const container = document.getElementById('editFeaturesContainer');
+        container.innerHTML = '';
+        features.forEach(feat => {
+            addFeatureInput('editFeaturesContainer', feat);
+        });
+        if (features.length === 0) {
+            addFeatureInput('editFeaturesContainer');
+        }
+
+        new bootstrap.Modal(document.getElementById('editProductModal')).show();
+    }
+
+    function markImageForDeletion(imageId) {
+        const input = document.getElementById('deletedImagesInput');
+        const current = input.value ? input.value.split(',') : [];
+        current.push(imageId);
+        input.value = current.join(',');
+
+        const element = document.getElementById(`existing-img-${imageId}`);
+        if (element) {
+            element.remove();
+        }
+    }
+    function confirmDelete(productId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#3b82f6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete-form-' + productId).submit();
+            }
+        });
+    }
+</script>
+<script>
+    // Global state to store files for each input
+    const fileState = {
+        'addImagesInput': new DataTransfer(),
+        'editImagesInput': new DataTransfer()
+    };
+
+    /* File Upload Logic */
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e, inputId, previewId) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove('drag-over');
+
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        handleFiles(files, inputId, previewId);
+    }
+
+    function handleFileSelect(input, previewId) {
+        const files = input.files;
+        handleFiles(files, input.id, previewId);
+    }
+
+    function handleFiles(newFiles, inputId, previewId) {
+        const dt = fileState[inputId];
+        const input = document.getElementById(inputId);
+        const previewContainer = document.getElementById(previewId);
+
+        // Add new files (filter images & check duplicates)
+        for (let i = 0; i < newFiles.length; i++) {
+            const file = newFiles[i];
+            if (file.type.startsWith('image/')) {
+                // Check if file already exists in our stored list
+                let exists = false;
+                for (let j = 0; j < dt.files.length; j++) {
+                    const existingFile = dt.files[j];
+                    if (existingFile.name === file.name && existingFile.size === file.size) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (!exists) {
+                    dt.items.add(file);
+                }
+            }
+        }
+
+        // Update input files
+        input.files = dt.files;
+
+        // Render Previews
+        renderPreviews(dt.files, previewContainer, inputId);
+    }
+
+    function renderPreviews(fileList, container, inputId) {
+        container.innerHTML = ''; // Clear current previews
+
+        // If this is the edit container, we need to PRESERVE the existing images that might be there
+        // The container might have had server-side rendered existing images.
+        // Wait, 'renderPreviews' clears everything. 
+        // We should separate 'New File Previews' area from 'Existing Images' area or
+        // re-render only the new ones.
+        // BUT, my previous code mixed them or cleared them?
+        // Checking previous code: `editProduct` clears container and adds existing.
+        // `renderPreviews` clears container and adds new. 
+        // PROBABLE BUG: Adding a new file wipes out the visual of existing files in Edit Modal.
+        // FIX: The preview container should separate "Existing" and "New" or 
+        // we should only clear the "New" section.
+        // Let's create a sub-container for new files if it doesn't exist, or just append?
+        // Appending is tricky because we re-render the whole list to keep indices in sync for 'remove'.
+
+        // Better approach: 
+        // The `previewId` points to `addPreviewContainer` or `editPreviewContainer`.
+        // In `editProduct`, I populated `editPreviewContainer`.
+        // If I clear it here, I lose existing images.
+
+        // I will split the container logic. 
+        // I will add a specific container for NEW images inside the main preview container 
+        // OR better: Just don't clear the whole thing. 
+        // But `renderPreviews` needs to show the current state of `dt`.
+
+        // Let's modify the HTML structure slightly in the next step or handle it here via JS.
+        // I'll create a dedicated div for new files if it doesn't exist, or just append?
+        // Actually, easiest fix: changing the HTML to have a separate div for new previews is safest.
+        // But I am in a JS replacement block.
+        // I will check if a "new-images-container" exists inside the preview container. If not, create it.
+
+        let newImagesContainer = container.querySelector('.new-images-container');
+        if (!newImagesContainer) {
+            newImagesContainer = document.createElement('div');
+            newImagesContainer.className = 'new-images-container d-flex flex-wrap gap-2';
+            container.appendChild(newImagesContainer);
+        }
+
+        // Clear only the new images container
+        newImagesContainer.innerHTML = '';
+
+        Array.from(fileList).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = function () {
+                const div = document.createElement('div');
+                div.className = 'preview-image-container';
+                div.innerHTML = `
+                    <img src="${reader.result}" class="preview-image">
+                    <button type="button" class="remove-image-btn" onclick="removeFile('${inputId}', ${index}, '${container.id}')">
+                        <i class="bi bi-x"></i>
+                    </button>
+                `;
+                newImagesContainer.appendChild(div);
+            }
+        });
+    }
+
+    function removeFile(inputId, fileIndex, previewId) {
+        const dt = fileState[inputId];
+        const input = document.getElementById(inputId);
+        const container = document.getElementById(previewId);
+
+        // Remove item at index
+        dt.items.remove(fileIndex);
+
+        // Update input
+        input.files = dt.files;
+
+        // Re-render
+        renderPreviews(dt.files, container, inputId);
+    }
+
+    // Reset function for Add Modal
+    const addModal = document.getElementById('addProductModal');
+    if (addModal) {
+        addModal.addEventListener('hidden.bs.modal', function () {
+            fileState['addImagesInput'] = new DataTransfer();
+            document.getElementById('addImagesInput').files = fileState['addImagesInput'].files;
+            document.getElementById('addPreviewContainer').innerHTML = '';
+            document.getElementById('addProductForm').reset();
+        });
+    }
+
+</script>
+{% endblock %}

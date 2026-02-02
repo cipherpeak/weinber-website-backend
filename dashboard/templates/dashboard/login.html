@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weinber - Login</title>
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/tailwind-compiled.css' %}">
+    <link rel="icon" type="image/jpeg" href="{% static 'assets/images/logo.jpg' %}">
+    <link href="https://fonts.cdnfonts.com/css/gotham" rel="stylesheet">
+</head>
+
+<body class="bg-white text-slate-800 min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <!-- Background Effects -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-50 rounded-full blur-[100px] opacity-70">
+        </div>
+        <div
+            class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-50 rounded-full blur-[100px] opacity-70">
+        </div>
+    </div>
+
+    <!-- Login Card -->
+    <div
+        class="w-full max-w-md bg-white/80 backdrop-blur-xl border border-slate-200 rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] animate-fade-in-up">
+        <div class="text-center mb-8">
+            <img src="{% static 'assets/images/Logo-2x-1_ekkzmz.png' %}" alt="Weinber Inc." class="h-10 mx-auto mb-4 object-contain">
+            <p class="text-slate-500">Access your dashboard</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6" method="POST" action="{% url 'admin-login' %}">
+            {% csrf_token %}
+            
+            {% if messages %}
+            <div class="space-y-2">
+                {% for message in messages %}
+                <p class="text-{{ message.tags }}-600 text-sm text-center">{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="space-y-2">
+                <label for="username" class="text-sm font-medium text-slate-700 ml-1">Username</label>
+                <input type="text" id="username" name="username" required placeholder="username"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue focus:ring-1 focus:ring-weinberBlue transition-all duration-300">
+            </div>
+
+            <div class="space-y-2">
+                <label for="password" class="text-sm font-medium text-slate-700 ml-1">Password</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue focus:ring-1 focus:ring-weinberBlue transition-all duration-300">
+            </div>
+
+            <button type="submit" id="loginBtn"
+                class="w-full bg-weinberBlue hover:bg-blue-800 text-white font-bold py-3.5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-md shadow-blue-200 flex items-center justify-center gap-2">
+                <span>Log In</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- <script src="{% static 'assets/js/api.js' %}"></script> -->
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+
+        loginForm.addEventListener('submit', () => {
+             // Simple loader on submit
+            loginBtn.innerHTML = '<img src="{% static "assets/images/loader.gif" %}" class="h-6 w-6" alt="Loading..." onerror="this.style.display=\'none\'; this.parentElement.innerText=\'Logging In...\'">';
+            loginBtn.disabled = true;
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weinber - Admin Panel</title>
+    <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/tailwind-compiled.css' %}">
+    <link rel="icon" type="image/jpeg" href="{% static 'assets/images/logo.jpg' %}">
+    <link href="https://fonts.cdnfonts.com/css/gotham" rel="stylesheet">
+    <style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-link.active {
+            background: #eff6ff;
+            border-left: 3px solid #0047AB;
+            color: #0047AB;
+        }
+    </style>
+</head>
+
+<body class="bg-[#f8fafc] text-slate-800 font-sans h-screen overflow-hidden flex">
+
+    <!-- Sidebar -->
+    <aside
+        class="w-64 glass-panel flex flex-col h-full hidden md:flex transition-all duration-300 z-20 shadow-sm border-r border-slate-200">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-center">
+            <!-- Logo -->
+            <img src="{% static 'assets/images/logo.jpg' %}" alt="Weinber Admin" class="h-8 object-contain">
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-6 px-3">
+            <ul class="nav-links space-y-1">
+                <li>
+                    <a href="#"
+                        class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-r-lg text-slate-500 hover:text-slate-900 transition-all"
+                        data-section="overview">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                            </path>
+                        </svg>
+                        Overview
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                        data-section="products">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                        Products
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                        data-section="content">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
+                        Hero Sections
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                        data-section="dealers">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                            </path>
+                        </svg>
+                        Dealers
+                    </a>
+                </li>
+                <li>
+                    <a href="#"
+                        class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-r-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                        data-section="claims">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        Warranty Claims
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="p-4 border-t border-slate-100">
+            <button id="logoutBtn"
+                class="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all font-medium text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
+                </svg>
+                Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+        <!-- Background Orbs -->
+        <div
+            class="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-100 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/2 opacity-50">
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-50 rounded-full blur-[100px] pointer-events-none translate-y-1/2 -translate-x-1/4 opacity-50">
+        </div>
+
+        <!-- Header -->
+        <header class="h-20 border-b border-slate-200 px-8 flex items-center justify-between z-10 bg-white shadow-sm">
+            <div>
+                <h1 id="sectionTitle" class="text-2xl font-bold text-slate-800">
+                    Overview</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <div
+                    class="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-full border border-slate-200 shadow-inner">
+                    <div
+                        class="w-8 h-8 rounded-full bg-gradient-to-br from-weinberBlue to-blue-500 flex items-center justify-center text-xs font-bold shadow text-white">
+                        A</div>
+                    <span id="adminName" class="text-sm font-medium pr-2 text-slate-700">Admin User</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Scroll Area -->
+        <div class="flex-1 overflow-y-auto p-8 z-10 relative">
+
+            <!-- Overview Section -->
+            <section id="overview" class="content-section space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div
+                        class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                        <div
+                            class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-full blur-2xl -mr-6 -mt-6 transition-all group-hover:bg-blue-100">
+                        </div>
+                        <h3 class="text-slate-500 text-sm font-medium mb-1">Total Products</h3>
+                        <p id="totalProducts" class="text-4xl font-bold text-slate-900 tracking-tight">Loading...</p>
+                        <div class="mt-4 text-xs text-green-600 font-medium">
+                            <span class="bg-green-50 px-2 py-1 rounded">+ New added</span>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                        <div
+                            class="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-full blur-2xl -mr-6 -mt-6 transition-all group-hover:bg-purple-100">
+                        </div>
+                        <h3 class="text-slate-500 text-sm font-medium mb-1">Dealer Network</h3>
+                        <p id="totalDealers" class="text-4xl font-bold text-slate-900 tracking-tight">Loading...</p>
+                        <div class="mt-4 text-xs text-blue-600 font-medium">
+                            <span class="bg-blue-50 px-2 py-1 rounded">Active Partners</span>
+                        </div>
+                    </div>
+                    <div
+                        class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+                        <div
+                            class="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-full blur-2xl -mr-6 -mt-6 transition-all group-hover:bg-orange-100">
+                        </div>
+                        <h3 class="text-slate-500 text-sm font-medium mb-1">Pending Claims</h3>
+                        <p id="pendingClaims" class="text-4xl font-bold text-slate-900 tracking-tight">Loading...</p>
+                        <div class="mt-4 text-xs text-orange-600 font-medium">
+                            <span class="bg-orange-50 px-2 py-1 rounded">Action Required</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Products Section -->
+            <section id="products" class="content-section hidden space-y-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-slate-800">Product Catalog</h3>
+                        <button onclick="showModal('addProductModal')"
+                            class="bg-weinberBlue hover:bg-blue-800 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-md shadow-blue-200 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            Add Product
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="productsTable" class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-slate-500 text-sm border-b border-slate-100">
+                                    <th class="py-3 px-4 font-medium">Name</th>
+                                    <th class="py-3 px-4 font-medium">Category</th>
+                                    <th class="py-3 px-4 font-medium">SKU</th>
+                                    <th class="py-3 px-4 font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-slate-50">
+                                {% for product in products %}
+                                <tr>
+                                    <td class="py-3 px-4 flex items-center gap-3">
+                                        {% if product.image %}
+                                        <img src="{{ product.image.url }}" class="w-8 h-8 rounded-lg object-cover bg-slate-100">
+                                        {% else %}
+                                        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-400">NA</div>
+                                        {% endif %}
+                                        {{ product.name }}
+                                    </td>
+                                    <td class="py-3 px-4 text-slate-500">{{ product.category }}</td>
+                                    <td class="py-3 px-4 text-slate-500 font-mono text-xs">{{ product.sku|default:"-" }}</td>
+                                    <td class="py-3 px-4">
+                                        <form action="{% url 'delete-product' product.id %}" method="POST" onsubmit="return confirm('Are you sure?');" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-slate-400">No products found. Add one to get started.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hero Content Section -->
+            <section id="content" class="content-section hidden">
+                <div class="bg-white rounded-2xl p-8 max-w-3xl mx-auto shadow-md border border-slate-100">
+                     <p class="text-center text-gray-400 py-10">Hero section management coming soon.</p>
+                </div>
+            </section>
+
+            <!-- Dealers Section -->
+            <section id="dealers" class="content-section hidden space-y-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-slate-800">Dealer Management</h3>
+                        <button onclick="showModal('addDealerModal')"
+                            class="bg-weinberBlue hover:bg-blue-800 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-md shadow-blue-200 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z">
+                                </path>
+                            </svg>
+                            Register Dealer
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="dealersTable" class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-slate-500 text-sm border-b border-slate-100">
+                                    <th class="py-3 px-4 font-medium">Name</th>
+                                    <th class="py-3 px-4 font-medium">Company</th>
+                                    <th class="py-3 px-4 font-medium">Email</th>
+                                    <th class="py-3 px-4 font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-slate-50">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="addProductModal"
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="modal-content bg-white w-full max-w-lg rounded-2xl p-8 transform transition-all scale-100 shadow-2xl border border-slate-100">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 text-center">Add New Product</h2>
+            <form id="addProductForm" class="space-y-4" method="POST" action="{% url 'add-products' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="text" name="name" id="pName" placeholder="Product Name" required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue">
+                <input type="text" name="category" id="pCategory" placeholder="Category" required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue">
+                <input type="text" name="sku" id="pSku" placeholder="SKU"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue">
+                <textarea name="description" id="pDescription" placeholder="Description" rows="3"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue"></textarea>
+                <div class="space-y-1">
+                    <span class="text-xs text-slate-500 ml-1">Product Image</span>
+                    <input type="file" name="image" id="pImage" accept="image/*"
+                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-weinberBlue hover:file:bg-slate-200">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit"
+                        class="flex-1 bg-weinberBlue hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition-all shadow-md shadow-blue-200">Save
+                        Product</button>
+                    <button type="button"
+                        class="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-all"
+                        onclick="hideModal('addProductModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addDealerModal"
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="modal-content bg-white w-full max-w-lg rounded-2xl p-8 transform transition-all scale-100 shadow-2xl border border-slate-100">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 text-center">Register New Dealer</h2>
+            <form id="addDealerForm" class="space-y-4">
+                <input type="text" id="dName" placeholder="Full Name" required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue">
+                <input type="text" id="dCompany" placeholder="Company Name" required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue">
+                <input type="email" id="dEmail" placeholder="Email Address" required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue">
+                <input type="password" id="dPassword" placeholder="Initial Password" required
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-weinberBlue">
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit"
+                        class="flex-1 bg-weinberBlue hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition-all shadow-md shadow-blue-200">Register
+                        Dealer</button>
+                    <button type="button"
+                        class="flex-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-all"
+                        onclick="hideModal('addDealerModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 
+    Scripts commented out to prevent redirect loop to index.html (client-side auth check).
+    Since we are using Django Server-Side Auth, these scripts need to be refactored to use Session Authentication instead of Token/LocalStorage.
+    <script src="{% static 'assets/js/api.js' %}"></script>
+    <script src="{% static 'assets/js/admin.js' %}"></script> 
+    -->
+    <script>
+        // Simple script to handle active state of sidebar without full react logic since this is vanilla JS
+        const links = document.querySelectorAll('.sidebar-link');
+        const sections = document.querySelectorAll('.content-section');
+        const title = document.getElementById('sectionTitle');
+
+        links.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                // remove active class
+                links.forEach(l => l.classList.remove('active', 'border-l-4', 'border-weinberBlue', 'bg-gradient-to-r', 'from-blue-900/20', 'to-transparent', 'text-white'));
+                // add active class styles logic manually or rely on CSS classes toggled
+                // Using the CSS class logic from style block above primarily
+                links.forEach(l => l.classList.remove('active'));
+
+                link.classList.add('active');
+
+                const sectionId = link.getAttribute('data-section');
+
+                // update title
+                title.textContent = link.textContent.trim();
+
+                // show hide sections
+                sections.forEach(s => s.classList.add('hidden'));
+                document.getElementById(sectionId).classList.remove('hidden');
+            });
+        });
+
+        // Modal Helpers - usually these might be in admin.js but let's ensure they work for Tailwind classes
+        window.showModal = (id) => {
+            document.getElementById(id).classList.remove('hidden');
+        }
+        window.hideModal = (id) => {
+            document.getElementById(id).classList.add('hidden');
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,44 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Overview{% endblock %}
+
+{% block content %}
+<section id="overview" class="content-section space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+            class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div
+                class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-full blur-2xl -mr-6 -mt-6 transition-all group-hover:bg-blue-100">
+            </div>
+            <h3 class="text-slate-500 text-sm font-medium mb-1">Total Products</h3>
+            <p id="totalProducts" class="text-4xl font-bold text-slate-900 tracking-tight">{{ total_products|default:"0" }}</p>
+            <div class="mt-4 text-xs text-green-600 font-medium">
+                <span class="bg-green-50 px-2 py-1 rounded">+ New added</span>
+            </div>
+        </div>
+        <div
+            class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div
+                class="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-full blur-2xl -mr-6 -mt-6 transition-all group-hover:bg-purple-100">
+            </div>
+            <h3 class="text-slate-500 text-sm font-medium mb-1">Dealer Network</h3>
+            <p id="totalDealers" class="text-4xl font-bold text-slate-900 tracking-tight">0</p>
+            <div class="mt-4 text-xs text-blue-600 font-medium">
+                <span class="bg-blue-50 px-2 py-1 rounded">Active Partners</span>
+            </div>
+        </div>
+        <div
+            class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div
+                class="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-full blur-2xl -mr-6 -mt-6 transition-all group-hover:bg-orange-100">
+            </div>
+            <h3 class="text-slate-500 text-sm font-medium mb-1">Pending Claims</h3>
+            <p id="pendingClaims" class="text-4xl font-bold text-slate-900 tracking-tight">0</p>
+            <div class="mt-4 text-xs text-orange-600 font-medium">
+                <span class="bg-orange-50 px-2 py-1 rounded">Action Required</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

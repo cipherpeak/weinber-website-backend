@@ -1,0 +1,425 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Warranty Registration{% endblock %}
+
+{% block content %}
+<section id="warranty" class="container-fluid py-4">
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0 fw-bold text-secondary">Warranty Registration</h5>
+                <p class="text-muted small mb-0">Manage and register product warranties.</p>
+            </div>
+            <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addWarrantyModal">
+                <i class="bi bi-plus-lg me-2"></i>Register New Warranty
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4 py-3 border-0">Customer</th>
+                            <th class="py-3 border-0">Vehicle</th>
+                            <th class="py-3 border-0">Product</th>
+                            <th class="py-3 border-0">Install Date</th>
+                            <th class="py-3 border-0 text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for reg in registrations %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3 d-flex align-items-center justify-content-center rounded-circle bg-info bg-opacity-10 text-info fw-bold"
+                                        style="width: 40px; height: 40px;">
+                                        {{ reg.customer_first_name|make_list|first|upper }}
+                                    </div>
+                                    <div>
+                                        <p class="mb-0 fw-medium text-dark">{{ reg.customer_first_name }} {{
+                                            reg.customer_last_name }}</p>
+                                        <p class="mb-0 text-muted small">{{ reg.customer_email }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-secondary">
+                                <span class="d-block text-dark fw-medium small">{{ reg.vehicle_make_model }}</span>
+                                <span class="small">{{ reg.chassis_number }}</span>
+                            </td>
+                            <td class="text-secondary">{{ reg.product.name|default:"Unknown Product" }}</td>
+                            <td class="text-secondary">
+                                {{ reg.installation_date|date:"M d, Y" }}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button
+                                        class="btn btn-sm btn-outline-primary d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
+                                        onclick="viewWarranty('{{ reg.id }}', '{{ reg.customer_first_name }}', '{{ reg.customer_last_name }}', '{{ reg.customer_email }}', '{{ reg.customer_phone }}', '{{ reg.vehicle_make_model }}', '{{ reg.chassis_number }}', '{{ reg.product.name }}', '{{ reg.serial_number }}', '{{ reg.application_type }}', '{{ reg.installation_date|date:'Y-m-d' }}', '{% if reg.proof_of_purchase %}{{ reg.proof_of_purchase.url }}{% endif %}')"
+                                        title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <!-- Only Dealer who created or Admin can Edit/Delete -->
+                                    <button
+                                        class="btn btn-sm btn-primary d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
+                                        onclick="editWarranty('{{ reg.id }}', '{{ reg.customer_first_name }}', '{{ reg.customer_last_name }}', '{{ reg.customer_email }}', '{{ reg.customer_phone }}', '{{ reg.vehicle_make_model }}', '{{ reg.chassis_number }}', '{{ reg.product.id }}', '{{ reg.serial_number }}', '{{ reg.application_type }}', '{{ reg.installation_date|date:'Y-m-d' }}')"
+                                        title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button"
+                                        class="btn btn-sm btn-outline-danger d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
+                                        onclick="confirmDelete('{{ reg.id }}')" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    <form id="delete-form-{{ reg.id }}"
+                                        action="{% url 'delete-warranty-registration' reg.id %}" method="POST"
+                                        style="display: none;">
+                                        {% csrf_token %}
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="mb-2">
+                                    <i class="bi bi-file-earmark-text display-6 opacity-50"></i>
+                                </div>
+                                <h6 class="fw-bold">No Registrations Found</h6>
+                                <p class="small mb-0">Register your first warranty.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block modals %}
+<!-- Add Warranty Modal -->
+<div class="modal fade" id="addWarrantyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <!-- Header centered roughly like image -->
+                <div class="w-100 text-center position-relative">
+                    <h4 class="modal-title fw-bold text-primary">Warranty Registration</h4>
+                    <p class="text-muted small mb-0">Activate your warranty to ensure comprehensive protection.</p>
+                    <button type="button" class="btn-close position-absolute top-0 end-0" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-5 pt-4">
+                <form action="{% url 'add-warranty-registration' %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- PRODUCT INFORMATION -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3">Product Information</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Serial No. *</label>
+                            <input type="text" name="serial_number"
+                                class="form-control rounded-3 bg-light border-0 py-2.5" required>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Application Type</label>
+                                <input type="text" name="application_type" value="PAINT PROTECTION FILMS"
+                                    class="form-control rounded-3 bg-light border-0 py-2.5">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Select Product</label>
+                                <select name="product" class="form-select rounded-3 bg-light border-0 py-2.5" required>
+                                    <option value="" selected disabled>Select Product...</option>
+                                    {% for product in products %}
+                                    <option value="{{ product.id }}">{{ product.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Add Another Button (Visual only for now as per minimal viable Req) -->
+                        <div class="text-center my-4">
+                            <button type="button" class="btn btn-outline-primary rounded-pill px-4 py-2 border-dashed">
+                                <i class="bi bi-plus-circle me-2"></i>Add Another Application Type
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CUSTOMER INFORMATION -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3">Customer Information</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">First Name *</label>
+                                <input type="text" name="first_name"
+                                    class="form-control rounded-3 bg-light border-0 py-2.5" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Last Name *</label>
+                                <input type="text" name="last_name"
+                                    class="form-control rounded-3 bg-light border-0 py-2.5" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Email Address</label>
+                                <input type="email" name="email" class="form-control rounded-3 bg-light border-0 py-2.5"
+                                    required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Phone *</label>
+                                <input type="text" name="phone" class="form-control rounded-3 bg-light border-0 py-2.5"
+                                    required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VEHICLE INFORMATION -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3">Vehicle Information</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Installation Date *</label>
+                            <input type="date" name="installation_date"
+                                class="form-control rounded-3 bg-light border-0 py-2.5" required>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Chassis No. *</label>
+                                <input type="text" name="chassis_number"
+                                    class="form-control rounded-3 bg-light border-0 py-2.5" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Year, Make & Model *</label>
+                                <input type="text" name="vehicle_details"
+                                    class="form-control rounded-3 bg-light border-0 py-2.5" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Upload proof of Purchase *</label>
+                            <div class="border-2 border-dashed border-light-subtle rounded-4 p-4 text-center bg-light">
+                                <i class="bi bi-cloud-arrow-up display-6 text-muted mb-2"></i>
+                                <p class="small text-muted mb-2">Upload a file or drag and drop</p>
+                                <input type="file" name="proof_of_purchase" class="form-control"
+                                    accept="image/*,application/pdf" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary rounded-pill py-3 fw-bold shadow-lg">Submit
+                            Registration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Warranty Modal -->
+<div class="modal fade" id="editWarrantyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Edit Warranty Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="editWarrantyForm" method="POST" action="" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <!-- Reuse similar structure or simplified for edit -->
+                    <div class="row g-3">
+                        <!-- Simplified Layout for Edit -->
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">First Name</label>
+                            <input type="text" name="first_name" id="editFirstName"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Last Name</label>
+                            <input type="text" name="last_name" id="editLastName"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Email</label>
+                            <input type="email" name="email" id="editEmail"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Phone</label>
+                            <input type="text" name="phone" id="editPhone"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Product</label>
+                            <select name="product" id="editProduct" class="form-select rounded-3 bg-light border-0"
+                                required>
+                                {% for product in products %}
+                                <option value="{{ product.id }}">{{ product.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Serial No</label>
+                            <input type="text" name="serial_number" id="editSerial"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted">Vehicle Details</label>
+                            <input type="text" name="vehicle_details" id="editVehicle"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Chassis No</label>
+                            <input type="text" name="chassis_number" id="editChassis"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Install Date</label>
+                            <input type="date" name="installation_date" id="editInstallDate"
+                                class="form-control rounded-3 bg-light border-0" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small text-muted">Proof (Leave empty to keep current)</label>
+                            <input type="file" name="proof_of_purchase"
+                                class="form-control rounded-3 bg-light border-0">
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-warning text-white rounded-pill py-2 fw-medium">Update
+                            Registration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Warranty Modal -->
+<div class="modal fade" id="viewWarrantyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Warranty Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="bg-light rounded-4 p-4 mb-3">
+                    <h6 class="text-uppercase text-primary fw-bold small mb-3">Customer</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Name</span>
+                            <span class="fw-bold text-dark" id="viewName">-</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Email</span>
+                            <span class="fw-bold text-dark" id="viewEmail">-</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Phone</span>
+                            <span class="fw-bold text-dark" id="viewPhone">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-light rounded-4 p-4 mb-3">
+                    <h6 class="text-uppercase text-primary fw-bold small mb-3">Product & Vehicle</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Product</span>
+                            <span class="fw-bold text-dark" id="viewProduct">-</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Serial No</span>
+                            <span class="fw-bold text-dark" id="viewSerial">-</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Vehicle</span>
+                            <span class="fw-bold text-dark" id="viewVehicle">-</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Chassis No</span>
+                            <span class="fw-bold text-dark" id="viewChassis">-</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <span class="d-block text-muted small">Installation Date</span>
+                            <span class="fw-bold text-dark" id="viewInstallDate">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center" id="viewProofContainer">
+                    <a href="#" id="viewProofLink" target="_blank" class="btn btn-outline-primary rounded-pill">
+                        <i class="bi bi-file-earmark-image me-2"></i> View Proof of Purchase
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function viewWarranty(id, first, last, email, phone, vehicle, chassis, product, serial, appType, installDate, proofUrl) {
+        document.getElementById('viewName').innerText = first + ' ' + last;
+        document.getElementById('viewEmail').innerText = email;
+        document.getElementById('viewPhone').innerText = phone;
+        document.getElementById('viewVehicle').innerText = vehicle;
+        document.getElementById('viewChassis').innerText = chassis;
+        document.getElementById('viewProduct').innerText = product;
+        document.getElementById('viewSerial').innerText = serial;
+        document.getElementById('viewInstallDate').innerText = installDate;
+
+        const proofLink = document.getElementById('viewProofLink');
+        if (proofUrl) {
+            proofLink.href = proofUrl;
+            document.getElementById('viewProofContainer').style.display = 'block';
+        } else {
+            document.getElementById('viewProofContainer').style.display = 'none';
+        }
+
+        new bootstrap.Modal(document.getElementById('viewWarrantyModal')).show();
+    }
+
+    function editWarranty(id, first, last, email, phone, vehicle, chassis, productId, serial, appType, installDate) {
+        document.getElementById('editFirstName').value = first;
+        document.getElementById('editLastName').value = last;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editPhone').value = phone;
+        document.getElementById('editVehicle').value = vehicle;
+        document.getElementById('editChassis').value = chassis;
+        document.getElementById('editProduct').value = productId; // Select by ID
+        document.getElementById('editSerial').value = serial;
+        document.getElementById('editInstallDate').value = installDate;
+
+        const form = document.getElementById('editWarrantyForm');
+        form.action = `/dashboard/warranty-registration/edit/${id}/`;
+
+        new bootstrap.Modal(document.getElementById('editWarrantyModal')).show();
+    }
+
+    function confirmDelete(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#3b82f6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete-form-' + id).submit();
+            }
+        });
+    }
+</script>
+{% endblock %}
