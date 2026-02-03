@@ -3,3 +3,5 @@ psycopg[binary]
 Pillow
 python-decouple
 gunicorn
+djangorestframework
+django-cors-headers

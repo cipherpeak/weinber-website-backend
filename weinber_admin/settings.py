@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
-from decouple import config
+from decouple import config, Csv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,7 +26,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 
 
 # Application definition
@@ -55,15 +55,19 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173"
+    "https://weinberinc.com",
+    "https://www.weinberinc.com",
+    #"http://localhost:3000",
+    #"http://127.0.0.1:3000",
+    #"http://localhost:5173"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "https://admin.weinberinc.com",
+    "https://www.admin.weinberinc.com",
+    #"http://localhost:5173",
+    #"http://localhost:3000",
+    #"http://127.0.0.1:3000",
 ]
 
 ROOT_URLCONF = 'weinber_admin.urls'
