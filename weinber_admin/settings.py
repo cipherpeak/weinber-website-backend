@@ -57,17 +57,18 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "https://weinberinc.com",
     "https://www.weinberinc.com",
-    #"http://localhost:3000",
-    #"http://127.0.0.1:3000",
-    #"http://localhost:5173"
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173"
+    
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://admin.weinberinc.com",
     "https://www.admin.weinberinc.com",
-    #"http://localhost:5173",
-    #"http://localhost:3000",
-    #"http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 ROOT_URLCONF = 'weinber_admin.urls'

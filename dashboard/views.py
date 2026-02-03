@@ -4,7 +4,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .models import CustomUser, Product, HomePage, FranchisePage, PackagesPage, ContactPage, ProductImage, ProductFeature, WarrantyRegistration
+from .models import CustomUser, Product,HomeBannerSlide,AdvantageBanner, ProductBanner, ProductImage, ProductFeature, WarrantyRegistration,AboutBanner, SiriusBanner, DaxDetailingBanner, DaxSolutionsBanner
 
 class Overview(View):
     def get(self, request):
@@ -24,40 +24,248 @@ class ProductList(View):
         return render(request, 'dashboard/products.html', {'products': products})
 
 
-class EditHeroCard(View):
+class HeroSectionsView(View):
+    def get(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+
+        # Ensure single-instance models exist
+        product_banner, _ = ProductBanner.objects.get_or_create(id=1)
+        about_banner, _ = AboutBanner.objects.get_or_create(id=1)
+        sirius_banner, _ = SiriusBanner.objects.get_or_create(id=1)
+        dax_detailing_banner, _ = DaxDetailingBanner.objects.get_or_create(id=1)
+        dax_solutions_banner, _ = DaxSolutionsBanner.objects.get_or_create(id=1)
+        advantage_banner, _ = AdvantageBanner.objects.get_or_create(id=1)
+
+        # Build cards list
+        # We need to manually construct the "Home" card object since it's a collection of slides
+        # We'll use the first active slide for preview
+        first_slide = HomeBannerSlide.objects.filter(is_active=True).first()
+        
+        home_obj = {
+            'title': 'Home Page Banners',
+            'description': 'Manage the rotating banner slides for the home page.',
+            'media_type': 'image',
+            'image': first_slide.image if first_slide else None,
+            'is_virtual': True # Flag to distinguish in template
+        }
+
+        hero_cards = [
+            {'type': 'home', 'badge': 'Home Page', 'obj': home_obj},
+            {'type': 'product_banner', 'badge': 'Product Banner', 'obj': product_banner},
+            {'type': 'about_banner', 'badge': 'About Banner', 'obj': about_banner},
+            {'type': 'sirius_banner', 'badge': 'Sirius PPF', 'obj': sirius_banner},
+            {'type': 'dax_detailing_banner', 'badge': 'Dax Detailing', 'obj': dax_detailing_banner},
+            {'type': 'dax_solutions_banner', 'badge': 'Dax Solutions', 'obj': dax_solutions_banner},
+            {'type': 'advantage_banner', 'badge': 'Advantage Banner', 'obj': advantage_banner},
+        ]
+
+        return render(request, 'dashboard/hero_sections.html', {'hero_cards': hero_cards})
+
+class HomeBannerListView(View):
+    def get(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        slides = HomeBannerSlide.objects.all().order_by('display_order', '-created_at')
+        return render(request, 'dashboard/home_banner_slides.html', {'slides': slides})
+
+class AddHomeBannerSlide(View):
     @method_decorator(never_cache)
-    def post(self, request, card_type):
+    def post(self, request):
         if not request.user.is_authenticated:
             return redirect('admin-login')
         
-        model_map = {
-            'home': HomePage,
-            'franchise': FranchisePage,
-            'packages': PackagesPage,
-            'contact': ContactPage
-        }
-        
-        ModelClass = model_map.get(card_type)
-        if not ModelClass:
-             messages.error(request, 'Invalid card type.')
-             return redirect('manage-content')
-
-        obj, _ = ModelClass.objects.get_or_create(id=1)
-        
-        obj.title = request.POST.get('title')
-        obj.description = request.POST.get('description')
-        obj.media_type = request.POST.get('media_type')
-        
-        if request.FILES.get('file'):
-            if obj.media_type == 'video':
-                obj.video = request.FILES.get('file')
-            else:
-                obj.image = request.FILES.get('file')
-        
-        obj.save()
-        messages.success(request, f'{obj._meta.verbose_name} updated successfully!')
+        try:
+            HomeBannerSlide.objects.create(
+                title1=request.POST.get('title1'),
+                title2=request.POST.get('title2'),
+                description=request.POST.get('description'),
+                image=request.FILES.get('image'),
+                link=request.POST.get('link'),
+                display_order=request.POST.get('display_order', 0),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Banner slide added successfully!')
+        except Exception as e:
+            messages.error(request, f'Error adding slide: {str(e)}')
             
-        return redirect('manage-content')
+        return redirect('home-banner-list')
+
+class EditHomeBannerSlide(View):
+    @method_decorator(never_cache)
+    def post(self, request, slide_id):
+        if not request.user.is_authenticated:
+            return redirect('admin-login')
+        
+        try:
+            slide = HomeBannerSlide.objects.get(id=slide_id)
+            slide.title1 = request.POST.get('title1')
+            slide.title2 = request.POST.get('title2')
+            slide.description = request.POST.get('description')
+            slide.link = request.POST.get('link')
+            slide.display_order = request.POST.get('display_order', 0)
+            slide.is_active = request.POST.get('is_active') == 'on'
+            
+            if request.FILES.get('image'):
+                slide.image = request.FILES.get('image')
+                
+            slide.save()
+            messages.success(request, 'Banner slide updated successfully!')
+        except HomeBannerSlide.DoesNotExist:
+            messages.error(request, 'Slide not found.')
+        except Exception as e:
+            messages.error(request, f'Error updating slide: {str(e)}')
+            
+        return redirect('home-banner-list')
+
+class DeleteHomeBannerSlide(View):
+    @method_decorator(never_cache)
+    def post(self, request, slide_id):
+        if not request.user.is_authenticated:
+            return redirect('admin-login')
+        
+        try:
+            slide = HomeBannerSlide.objects.get(id=slide_id)
+            slide.delete()
+            messages.success(request, 'Banner slide deleted successfully!')
+        except HomeBannerSlide.DoesNotExist:
+             messages.error(request, 'Slide not found.')
+             
+        return redirect('home-banner-list')
+
+class EditProductBanner(View):
+    @method_decorator(never_cache)
+    def post(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        
+        try:
+            banner, _ = ProductBanner.objects.get_or_create(id=1)
+            
+            banner.title = request.POST.get('title')
+            banner.description = request.POST.get('description')
+            
+            if request.FILES.get('file'):
+                banner.image = request.FILES.get('file')
+                
+            banner.save()
+            messages.success(request, 'Product Banner updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating banner: {str(e)}')
+            
+        return redirect('hero-sections')
+
+
+class EditAboutBanner(View):
+    @method_decorator(never_cache)
+    def post(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        
+        try:
+            banner, _ = AboutBanner.objects.get_or_create(id=1)
+            
+            banner.title = request.POST.get('title')
+            banner.description = request.POST.get('description')
+            
+            if request.FILES.get('file'):
+                banner.image = request.FILES.get('file')
+                
+            banner.save()
+            messages.success(request, 'About Banner updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating banner: {str(e)}')
+            
+        return redirect('hero-sections')
+
+class EditSiriusBanner(View):
+    @method_decorator(never_cache)
+    def post(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        
+        try:
+            banner, _ = SiriusBanner.objects.get_or_create(id=1)
+            
+            banner.title = request.POST.get('title')
+            banner.description = request.POST.get('description')
+            
+            if request.FILES.get('file'):
+                banner.image = request.FILES.get('file')
+                
+            banner.save()
+            messages.success(request, 'Sirius Banner updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating banner: {str(e)}')
+            
+        return redirect('hero-sections')
+
+class EditDaxDetailingBanner(View):
+    @method_decorator(never_cache)
+    def post(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        
+        try:
+            banner, _ = DaxDetailingBanner.objects.get_or_create(id=1)
+            
+            banner.title = request.POST.get('title')
+            banner.description = request.POST.get('description')
+            
+            if request.FILES.get('file'):
+                banner.image = request.FILES.get('file')
+                
+            banner.save()
+            messages.success(request, 'Dax Detailing Banner updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating banner: {str(e)}')
+            
+        return redirect('hero-sections')
+
+class EditDaxSolutionsBanner(View):
+    @method_decorator(never_cache)
+    def post(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        
+        try:
+            banner, _ = DaxSolutionsBanner.objects.get_or_create(id=1)
+            
+            banner.title = request.POST.get('title')
+            banner.description = request.POST.get('description')
+            
+            if request.FILES.get('file'):
+                banner.image = request.FILES.get('file')
+                
+            banner.save()
+            messages.success(request, 'Dax Solutions Banner updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating banner: {str(e)}')
+            
+        return redirect('hero-sections')
+
+
+class EditAdvantageBanner(View):
+    @method_decorator(never_cache)
+    def post(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        
+        try:
+            banner, _ = AdvantageBanner.objects.get_or_create(id=1)
+            
+            banner.title = request.POST.get('title')
+            banner.description = request.POST.get('description')
+            
+            if request.FILES.get('file'):
+                banner.image = request.FILES.get('file')
+                
+            banner.save()
+            messages.success(request, 'Advantage Banner updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating banner: {str(e)}')
+            
+        return redirect('hero-sections')
 
 
 class WarrantyClaims(View):
@@ -210,6 +418,23 @@ class AdminLogout(View):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class DealerList(View):
     def get(self, request):
         if not request.user.is_authenticated:
@@ -293,26 +518,20 @@ class EditDealer(View):
 
 
 
-class HeroContent(View):
-    def get(self, request):
-        if not request.user.is_authenticated:
-             return redirect('admin-login')
-        
-        # Ensure singletons exist
-        home_card, _ = HomePage.objects.get_or_create(id=1)
-        franchise_card, _ = FranchisePage.objects.get_or_create(id=1)
-        packages_card, _ = PackagesPage.objects.get_or_create(id=1)
-        contact_card, _ = ContactPage.objects.get_or_create(id=1)
 
-        # Prepare list for template with type identifier
-        hero_cards = [
-            {'type': 'home', 'obj': home_card, 'badge': 'Home Page'},
-            {'type': 'franchise', 'obj': franchise_card, 'badge': 'Franchise Page'},
-            {'type': 'packages', 'obj': packages_card, 'badge': 'Packages Page'},
-            {'type': 'contact', 'obj': contact_card, 'badge': 'Contact Page'},
-        ]
-        
-        return render(request, 'dashboard/hero_sections.html', {'hero_cards': hero_cards})
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class WarrantyRegistrationList(View):
     def get(self, request):
@@ -339,11 +558,12 @@ class AddWarrantyRegistration(View):
         
         try:
             # Create object
-            WarrantyRegistration.objects.create(
-                dealer=request.user,
-                product_id=request.POST.get('product'),
+            # Create object
+            warranty = WarrantyRegistration.objects.create(
+                dealer_user=request.user if request.user.role == 'dealer' else None, # Use dealer_user field
+                # product_id removed
                 serial_number=request.POST.get('serial_number'),
-                application_type=request.POST.get('application_type'),
+                # application_type removed
                 customer_first_name=request.POST.get('first_name'),
                 customer_last_name=request.POST.get('last_name'),
                 customer_email=request.POST.get('email'),
@@ -353,6 +573,25 @@ class AddWarrantyRegistration(View):
                 vehicle_make_model=request.POST.get('vehicle_details'),
                 proof_of_purchase=request.FILES.get('proof_of_purchase')
             )
+            
+            # Additional Dealer Info saving if needed (or let it default)
+            if request.user.role == 'dealer':
+                 warranty.dealer_name = request.user.first_name or ''
+                 warranty.dealer_email = request.user.email or ''
+                 warranty.dealer_company_name = request.user.company_name or ''
+                 warranty.save()
+
+            # Create Product Item
+            product_id = request.POST.get('product')
+            if product_id:
+                product = Product.objects.get(id=product_id)
+                from .models import WarrantyProductItem
+                WarrantyProductItem.objects.create(
+                    warranty=warranty,
+                    product=product.name,
+                    application_type=request.POST.get('application_type')
+                )
+
             messages.success(request, 'Warranty registered successfully!')
         except Exception as e:
             messages.error(request, f'Error creating registration: {str(e)}')
@@ -368,13 +607,13 @@ class EditWarrantyRegistration(View):
         try:
             reg = WarrantyRegistration.objects.get(id=reg_id)
             # Ensure dealer can only edit their own
-            if request.user.role == 'dealer' and reg.dealer != request.user:
+            if request.user.role == 'dealer' and reg.dealer_user != request.user:
                  messages.error(request, 'Permission denied.')
                  return redirect('warranty-registration')
 
-            reg.product_id = request.POST.get('product')
+            # reg.product_id = request.POST.get('product') # Removed
             reg.serial_number = request.POST.get('serial_number')
-            reg.application_type = request.POST.get('application_type')
+            # reg.application_type = request.POST.get('application_type') # Removed
             reg.customer_first_name = request.POST.get('first_name')
             reg.customer_last_name = request.POST.get('last_name')
             reg.customer_email = request.POST.get('email')
@@ -387,6 +626,23 @@ class EditWarrantyRegistration(View):
                 reg.proof_of_purchase = request.FILES.get('proof_of_purchase')
                 
             reg.save()
+
+            # Update Product Info
+            from .models import WarrantyProductItem
+            product_id = request.POST.get('product')
+            application_type = request.POST.get('application_type')
+            
+            # Update first item or create if not exists
+            item = reg.items.first()
+            if not item:
+                item = WarrantyProductItem(warranty=reg)
+            
+            if product_id:
+                product = Product.objects.get(id=product_id)
+                item.product = product.name
+            
+            item.application_type = application_type
+            item.save()
             messages.success(request, 'Registration updated successfully!')
         except WarrantyRegistration.DoesNotExist:
             messages.error(request, 'Registration not found.')
@@ -403,7 +659,7 @@ class DeleteWarrantyRegistration(View):
              
         try:
             reg = WarrantyRegistration.objects.get(id=reg_id)
-            if request.user.role == 'dealer' and reg.dealer != request.user:
+            if request.user.role == 'dealer' and reg.dealer_user != request.user:
                  messages.error(request, 'Permission denied.')
             else:
                 reg.delete()

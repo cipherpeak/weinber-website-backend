@@ -1,20 +1,30 @@
 from django.urls import path
 from .views import (
-    Overview, ProductList, DealerList, HeroContent, WarrantyClaims,
-    AdminLogin, AdminLogout, AddProduct, DeleteProduct, EditHeroCard, EditProduct,
-    AddDealer, DeleteDealer, EditDealer,
-    WarrantyRegistrationList, AddWarrantyRegistration, EditWarrantyRegistration, DeleteWarrantyRegistration
+    Overview, ProductList, DealerList, WarrantyClaims,
+    AdminLogin, AdminLogout, AddProduct, DeleteProduct, EditProduct,
+    AddDealer, DeleteDealer, EditDealer, HeroSectionsView, HomeBannerListView,
+    AddHomeBannerSlide, EditHomeBannerSlide, DeleteHomeBannerSlide,
+    WarrantyRegistrationList, AddWarrantyRegistration, EditWarrantyRegistration, DeleteWarrantyRegistration,
+    EditProductBanner,EditAboutBanner, EditSiriusBanner, EditDaxDetailingBanner, EditDaxSolutionsBanner,EditAdvantageBanner
 )
 
 
 urlpatterns = [
     path('', Overview.as_view(), name='dashboard'),
     path('products/', ProductList.as_view(), name='products'),
+    path('home-banner/list/', HomeBannerListView.as_view(), name='home-banner-list'),
+    path('hero-sections/', HeroSectionsView.as_view(), name='hero-sections'),
+    path('home-banner/add/', AddHomeBannerSlide.as_view(), name='add-home-banner'),
+    path('home-banner/edit/<int:slide_id>/', EditHomeBannerSlide.as_view(), name='edit-home-banner'),
+    path('home-banner/delete/<int:slide_id>/', DeleteHomeBannerSlide.as_view(), name='delete-home-banner'),
+    path('product-banner/edit/', EditProductBanner.as_view(), name='edit-product-banner'),
+    path('about-banner/edit/', EditAboutBanner.as_view(), name='edit-about-banner'),
+    path('sirius-banner/edit/', EditSiriusBanner.as_view(), name='edit-sirius-banner'),
+    path('dax-detailing-banner/edit/', EditDaxDetailingBanner.as_view(), name='edit-dax-detailing-banner'),
+    path('dax-solutions-banner/edit/', EditDaxSolutionsBanner.as_view(), name='edit-dax-solutions-banner'),
+    path('advantage-banner/edit/', EditAdvantageBanner.as_view(), name='edit-advantage-banner'),
     path('dealers/', DealerList.as_view(), name='dealers'),
-    path('content/', HeroContent.as_view(), name='manage-content'),
     path('claims/', WarrantyClaims.as_view(), name='warranty-claims'),
-    
-    path('hero-card/<str:card_type>/edit/', EditHeroCard.as_view(), name='edit-hero-card'),
     
     path('admin-login/', AdminLogin.as_view(), name='admin-login'),
     path('admin-logout/', AdminLogout.as_view(), name='admin-logout'),
