@@ -215,7 +215,7 @@ class WarrantyRegistrationCreateAPIView(generics.CreateAPIView):
                         # Create new dealer user
                         # Using email as username to ensure uniqueness
                         dealer_user = CustomUser.objects.create_user(
-                            username=dealer_email,
+                            username=transformed_data.get('dealer_name', ''),
                             email=dealer_email,
                             role='dealer',
                             company_name=transformed_data.get('dealer_company_name', ''),
@@ -254,4 +254,24 @@ class WarrantyRegistrationCreateAPIView(generics.CreateAPIView):
                 'message': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
     
-   
+
+from .serializers import WarrantyClaimSerializer
+
+class WarrantyClaimCreateAPIView(APIView):
+    permission_classes = [AllowAny]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        serializer = WarrantyClaimSerializer(data=request.data)
+        if serializer.is_valid():
+            claim = serializer.save()
+            return Response({
+                "success": True,
+                "message": "Warranty claim submitted successfully",
+                "id": claim.id
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "success": False,
+            "message": "Validation error",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)

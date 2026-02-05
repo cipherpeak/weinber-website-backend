@@ -4,7 +4,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .models import CustomUser, Product,HomeBannerSlide,AdvantageBanner, ProductBanner, ProductImage, ProductFeature, WarrantyRegistration,AboutBanner, SiriusBanner, DaxDetailingBanner, DaxSolutionsBanner
+from .models import CustomUser, Product,HomeBannerSlide,AdvantageBanner, ProductBanner, ProductImage, ProductFeature, WarrantyRegistration,AboutBanner, SiriusBanner, DaxDetailingBanner, DaxSolutionsBanner, WarrantyClaim
 
 class Overview(View):
     def get(self, request):
@@ -540,7 +540,7 @@ class WarrantyRegistrationList(View):
         
         # Filter based on role
         if request.user.role == 'dealer':
-            registrations = WarrantyRegistration.objects.filter(dealer=request.user).order_by('-created_at')
+            registrations = WarrantyRegistration.objects.filter(dealer_user=request.user).order_by('-created_at')
         else:
             registrations = WarrantyRegistration.objects.all().order_by('-created_at')
             
@@ -558,12 +558,37 @@ class AddWarrantyRegistration(View):
         
         try:
             # Create object
+            # Prepare dealer info
+            dealer_data = {}
+            if request.user.role == 'dealer':
+                dealer_data = {
+                    'dealer_user': request.user,
+                    'dealer_name': request.user.first_name or '',
+                    'dealer_email': request.user.email or '',
+                    'dealer_company_name': request.user.company_name or '',
+                    # Defaults
+                    'dealer_phone': '',
+                    'dealer_address': '',
+                    'dealer_city': '',
+                    'dealer_state': '',
+                    'dealer_zip': '',
+                    'dealer_country': ''
+                }
+                
+                # Check for previous registration to copy address/phone details
+                last_warranty = WarrantyRegistration.objects.filter(dealer_user=request.user).order_by('-created_at').first()
+                if last_warranty:
+                     dealer_data['dealer_phone'] = last_warranty.dealer_phone
+                     dealer_data['dealer_address'] = last_warranty.dealer_address
+                     dealer_data['dealer_city'] = last_warranty.dealer_city
+                     dealer_data['dealer_state'] = last_warranty.dealer_state
+                     dealer_data['dealer_zip'] = last_warranty.dealer_zip
+                     dealer_data['dealer_country'] = last_warranty.dealer_country
+
             # Create object
             warranty = WarrantyRegistration.objects.create(
-                dealer_user=request.user if request.user.role == 'dealer' else None, # Use dealer_user field
-                # product_id removed
+                **dealer_data,
                 serial_number=request.POST.get('serial_number'),
-                # application_type removed
                 customer_first_name=request.POST.get('first_name'),
                 customer_last_name=request.POST.get('last_name'),
                 customer_email=request.POST.get('email'),
@@ -573,24 +598,20 @@ class AddWarrantyRegistration(View):
                 vehicle_make_model=request.POST.get('vehicle_details'),
                 proof_of_purchase=request.FILES.get('proof_of_purchase')
             )
-            
-            # Additional Dealer Info saving if needed (or let it default)
-            if request.user.role == 'dealer':
-                 warranty.dealer_name = request.user.first_name or ''
-                 warranty.dealer_email = request.user.email or ''
-                 warranty.dealer_company_name = request.user.company_name or ''
-                 warranty.save()
 
-            # Create Product Item
-            product_id = request.POST.get('product')
-            if product_id:
-                product = Product.objects.get(id=product_id)
+            # Create Product Items
+            product_names = request.POST.getlist('product[]')
+            app_types = request.POST.getlist('application_type[]')
+
+            if product_names:
                 from .models import WarrantyProductItem
-                WarrantyProductItem.objects.create(
-                    warranty=warranty,
-                    product=product.name,
-                    application_type=request.POST.get('application_type')
-                )
+                for p_name, a_type in zip(product_names, app_types):
+                    if p_name.strip(): # Ensure product name is not empty
+                        WarrantyProductItem.objects.create(
+                            warranty=warranty,
+                            product=p_name,
+                            application_type=a_type
+                        )
 
             messages.success(request, 'Warranty registered successfully!')
         except Exception as e:
@@ -629,20 +650,23 @@ class EditWarrantyRegistration(View):
 
             # Update Product Info
             from .models import WarrantyProductItem
-            product_id = request.POST.get('product')
-            application_type = request.POST.get('application_type')
             
-            # Update first item or create if not exists
-            item = reg.items.first()
-            if not item:
-                item = WarrantyProductItem(warranty=reg)
+            # Clear existing items
+            reg.items.all().delete()
             
-            if product_id:
-                product = Product.objects.get(id=product_id)
-                item.product = product.name
+            # Get lists from form
+            product_names = request.POST.getlist('product[]')
+            app_types = request.POST.getlist('application_type[]')
             
-            item.application_type = application_type
-            item.save()
+            # Iterate and create
+            # use zip to pair them up. If lengths mismatch, it stops at shortest, which is safer than index errors
+            for p_name, a_type in zip(product_names, app_types):
+                if p_name.strip(): # Ensure product name is not empty
+                    WarrantyProductItem.objects.create(
+                        warranty=reg,
+                        product=p_name.strip(),
+                        application_type=a_type.strip()
+                    )
             messages.success(request, 'Registration updated successfully!')
         except WarrantyRegistration.DoesNotExist:
             messages.error(request, 'Registration not found.')
@@ -668,3 +692,71 @@ class DeleteWarrantyRegistration(View):
              messages.error(request, 'Registration not found.')
              
         return redirect('warranty-registration')
+
+class ChangeDealerPassword(View):
+    @method_decorator(never_cache)
+    def post(self, request, user_id):
+        if not request.user.is_authenticated:
+            return redirect('admin-login')
+        
+        try:
+            user_to_change = CustomUser.objects.get(id=user_id)
+            
+            # Authorization check
+            if request.user.role not in ['admin', 'super_admin'] and request.user != user_to_change:
+                 messages.error(request, 'Permission denied.')
+                 return redirect('warranty-registration')
+
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            if new_password and confirm_password:
+                if new_password == confirm_password:
+                     user_to_change.set_password(new_password)
+                     user_to_change.save()
+                     messages.success(request, 'Password updated successfully!')
+                else:
+                    messages.error(request, 'Passwords do not match.')
+            else:
+                 messages.error(request, 'Please provide both password fields.')
+                 
+        except CustomUser.DoesNotExist:
+            messages.error(request, 'User not found.')
+            
+        return redirect('warranty-registration')
+
+class WarrantyClaimListView(View):
+    def get(self, request):
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+        
+        # Filter based on role
+        if request.user.role == 'dealer':
+            # Dealers can see claims for warranties they registered? 
+            # Or should they only see claims they submitted?
+            # Assuming claims linked to warranties they created.
+            claims = WarrantyClaim.objects.filter(warranty__dealer_user=request.user).order_by('-created_at')
+        else:
+            claims = WarrantyClaim.objects.all().order_by('-created_at')
+            
+        return render(request, 'dashboard/warranty_claims_list.html', {'claims': claims})
+
+    def post(self, request, claim_id=None):
+        # Handle status update (Approve/Reject)
+        if not request.user.is_authenticated:
+             return redirect('admin-login')
+             
+        if claim_id:
+             try:
+                 claim = WarrantyClaim.objects.get(id=claim_id)
+                 new_status = request.POST.get('status')
+                 if new_status in ['pending', 'approved', 'rejected']:
+                     claim.status = new_status
+                     claim.save()
+                     messages.success(request, f'Claim status updated to {new_status}.')
+                 else:
+                     messages.error(request, 'Invalid status.')
+             except WarrantyClaim.DoesNotExist:
+                 messages.error(request, 'Claim not found.')
+                 
+        return redirect('warranty-claims-list')

@@ -193,3 +193,30 @@ class WarrantyProductItem(models.Model):
     def __str__(self):
         return f"{self.application_type} - {self.product}"
 
+
+class WarrantyClaim(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+    
+    warranty = models.ForeignKey(WarrantyRegistration, on_delete=models.CASCADE, related_name='claims')
+    issue_date = models.DateField()
+    issue_description = models.TextField()
+    warranty_card_image = models.ImageField(upload_to='warranty_cards/', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Claim for {self.serial_number} - {self.status}"
+
+
+class WarrantyClaimImage(models.Model):
+    claim = models.ForeignKey(WarrantyClaim, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='warranty_claims/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for Claim {self.claim.id}"

@@ -11,9 +11,11 @@
                 <h5 class="mb-0 fw-bold text-secondary">Warranty Registration</h5>
                 <p class="text-muted small mb-0">Manage and register product warranties.</p>
             </div>
+            {% if request.user.role == 'dealer' %}
             <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addWarrantyModal">
                 <i class="bi bi-plus-lg me-2"></i>Register New Warranty
             </button>
+            {% endif %}
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -22,7 +24,6 @@
                         <tr>
                             <th class="ps-4 py-3 border-0">Customer</th>
                             <th class="py-3 border-0">Vehicle</th>
-                            <th class="py-3 border-0">Product</th>
                             <th class="py-3 border-0">Install Date</th>
                             <th class="py-3 border-0 text-end pe-4">Actions</th>
                         </tr>
@@ -37,7 +38,8 @@
                                         {{ reg.customer_first_name|make_list|first|upper }}
                                     </div>
                                     <div>
-                                        <p class="mb-0 fw-medium text-dark">{{ reg.customer_first_name }} {{ reg.customer_last_name }}</p>
+                                        <p class="mb-0 fw-medium text-dark">{{ reg.customer_first_name }}
+                                            {{reg.customer_last_name }}</p>
                                         <p class="mb-0 text-muted small">{{ reg.customer_email }}</p>
                                     </div>
                                 </div>
@@ -46,7 +48,6 @@
                                 <span class="d-block text-dark fw-medium small">{{ reg.vehicle_make_model }}</span>
                                 <span class="small">{{ reg.chassis_number }}</span>
                             </td>
-                            <td class="text-secondary">{{ reg.product.name|default:"Unknown Product" }}</td>
                             <td class="text-secondary">
                                 {{ reg.installation_date|date:"M d, Y" }}
                             </td>
@@ -54,14 +55,14 @@
                                 <div class="d-flex justify-content-end gap-2">
                                     <button
                                         class="btn btn-sm btn-outline-primary d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
-                                        onclick="viewWarranty('{{ reg.id }}', '{{ reg.customer_first_name }}', '{{ reg.customer_last_name }}', '{{ reg.customer_email }}', '{{ reg.customer_phone }}', '{{ reg.vehicle_make_model }}', '{{ reg.chassis_number }}', '{{ reg.product.name }}', '{{ reg.serial_number }}', '{{ reg.application_type }}', '{{ reg.installation_date|date:'Y-m-d' }}', '{% if reg.proof_of_purchase %}{{ reg.proof_of_purchase.url }}{% endif %}', '{{ reg.dealer_company_name }}', '{{ reg.dealer_name }}', '{{ reg.dealer_email }}', '{{ reg.dealer_phone }}', '{{ reg.dealer_address }}', '{{ reg.dealer_city }}', '{{ reg.dealer_state }}', '{{ reg.dealer_zip }}', '{{ reg.dealer_country }}')"
+                                        onclick="viewWarranty('{{ reg.id }}', '{{ reg.customer_first_name|escapejs }}', '{{ reg.customer_last_name|escapejs }}', '{{ reg.customer_email|escapejs }}', '{{ reg.customer_phone|escapejs }}', '{{ reg.vehicle_make_model|escapejs }}', '{{ reg.chassis_number|escapejs }}', '{{ reg.serial_number|escapejs }}', '{{ reg.installation_date|date:'Y-m-d' }}', '{% if reg.proof_of_purchase %}{{ reg.proof_of_purchase.url|escapejs }}{% endif %}', '{{ reg.dealer_company_name|escapejs }}', '{{ reg.dealer_name|escapejs }}', '{{ reg.dealer_email|escapejs }}', '{{ reg.dealer_phone|escapejs }}', '{{ reg.dealer_address|escapejs }}', '{{ reg.dealer_city|escapejs }}', '{{ reg.dealer_state|escapejs }}', '{{ reg.dealer_zip|escapejs }}', '{{ reg.dealer_country|escapejs }}', '{{ reg.dealer_user.id }}')"
                                         title="View">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                     <!-- Only Dealer who created or Admin can Edit/Delete -->
                                     <button
                                         class="btn btn-sm btn-primary d-flex align-items-center gap-2 px-3 rounded-3 fw-medium"
-                                        onclick="editWarranty('{{ reg.id }}', '{{ reg.customer_first_name }}', '{{ reg.customer_last_name }}', '{{ reg.customer_email }}', '{{ reg.customer_phone }}', '{{ reg.vehicle_make_model }}', '{{ reg.chassis_number }}', '{{ reg.items.first.product }}', '{{ reg.serial_number }}', '{{ reg.items.first.application_type }}', '{{ reg.installation_date|date:'Y-m-d' }}', '{% if reg.proof_of_purchase %}{{ reg.proof_of_purchase.url }}{% endif %}')"
+                                        onclick="editWarranty('{{ reg.id }}', '{{ reg.customer_first_name|escapejs }}', '{{ reg.customer_last_name|escapejs }}', '{{ reg.customer_email|escapejs }}', '{{ reg.customer_phone|escapejs }}', '{{ reg.vehicle_make_model|escapejs }}', '{{ reg.chassis_number|escapejs }}', [ {% for item in reg.items.all %}{'product': '{{item.product|escapejs}}', 'app_type': '{{item.application_type|escapejs}}'},{% endfor %} ], '{{ reg.serial_number|escapejs }}', '{{ reg.installation_date|date:'Y-m-d' }}', '{% if reg.proof_of_purchase %}{{ reg.proof_of_purchase.url|escapejs }}{% endif %}')"
                                         title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -125,26 +126,121 @@
                                 class="form-control rounded-3 bg-light border-0 py-2.5" required>
                         </div>
 
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold">Application Type</label>
-                                <input type="text" name="application_type" value="PAINT PROTECTION FILMS"
-                                    class="form-control rounded-3 bg-light border-0 py-2.5">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold">Select Product</label>
-                                <select name="product" class="form-select rounded-3 bg-light border-0 py-2.5" required>
-                                    <option value="" selected disabled>Select Product...</option>
-                                    {% for product in products %}
-                                    <option value="{{ product.id }}">{{ product.name }}</option>
-                                    {% endfor %}
-                                </select>
+                        <div id="add-product-container">
+                            <div class="row g-3 mb-3 product-row align-items-end">
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold">Application Type</label>
+                                    <select name="application_type[]"
+                                        class="form-select rounded-3 bg-light border-0 py-2.5 app-type-select">
+                                        <option value="" disabled>Select Type...</option>
+                                        <option value="PAINT PROTECTION FILMS" selected>PAINT PROTECTION FILMS</option>
+                                        <option value="COATINGS">COATINGS</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold">Select Product</label>
+                                    <select name="product[]"
+                                        class="form-select rounded-3 bg-light border-0 py-2.5 product-select" required>
+                                        <!-- Options populated by JS -->
+                                        <option value="" selected disabled>Select Product...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <!-- Space for remove button in future rows -->
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Add Another Button (Visual only for now as per minimal viable Req) -->
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                const products = {
+                                    'PAINT PROTECTION FILMS': [
+                                        'PPF MAGNIFENCE',
+                                        'PPF MATTE',
+                                        'PPF BLACK'
+                                    ],
+                                    'COATINGS': [
+                                        'CERAMIC COATING',
+                                        'GRAPHENE COATING'
+                                    ]
+                                };
+
+                                function attachProductFilter(appSelect, productSelect) {
+                                    function updateProducts() {
+                                        const selectedType = appSelect.value;
+                                        const availableProducts = products[selectedType] || [];
+
+                                        // Save current selection if valid
+                                        const currentVal = productSelect.value;
+
+                                        // Reset options
+                                        productSelect.innerHTML = '<option value="" disabled>Select Product...</option>';
+
+                                        availableProducts.forEach(product => {
+                                            const option = document.createElement('option');
+                                            option.value = product;
+                                            option.textContent = product;
+                                            if (product === currentVal) option.selected = true;
+                                            productSelect.appendChild(option);
+                                        });
+
+                                        // If no value selected or selection no longer valid, select default
+                                        if (!currentVal || !availableProducts.includes(currentVal)) {
+                                            productSelect.value = "";
+                                        }
+                                    }
+
+                                    appSelect.addEventListener('change', updateProducts);
+                                    // Initial call
+                                    updateProducts();
+                                }
+
+                                // Initialize existing rows
+                                const initialAppSelect = document.querySelector('#add-product-container .app-type-select');
+                                const initialProductSelect = document.querySelector('#add-product-container .product-select');
+                                if (initialAppSelect && initialProductSelect) {
+                                    attachProductFilter(initialAppSelect, initialProductSelect);
+                                }
+
+                                // Expose function globaly for the button
+                                window.addWarrantyProductRow = function () {
+                                    const container = document.getElementById('add-product-container');
+                                    const newRow = document.createElement('div');
+                                    newRow.className = 'row g-3 mb-3 product-row align-items-end';
+                                    newRow.innerHTML = `
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-bold">Application Type</label>
+                                            <select name="application_type[]" class="form-select rounded-3 bg-light border-0 py-2.5 app-type-select">
+                                                <option value="" disabled selected>Select Type...</option>
+                                                <option value="PAINT PROTECTION FILMS">PAINT PROTECTION FILMS</option>
+                                                <option value="COATINGS">COATINGS</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label small fw-bold">Select Product</label>
+                                            <select name="product[]" class="form-select rounded-3 bg-light border-0 py-2.5 product-select" required>
+                                                <option value="" selected disabled>Select Product...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger w-100 rounded-3 py-2.5" onclick="this.closest('.product-row').remove()">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    `;
+                                    container.appendChild(newRow);
+
+                                    const newAppSelect = newRow.querySelector('.app-type-select');
+                                    const newProductSelect = newRow.querySelector('.product-select');
+                                    attachProductFilter(newAppSelect, newProductSelect);
+                                };
+                            });
+                        </script>
+
+                        <!-- Add Another Button -->
                         <div class="text-center my-4">
-                            <button type="button" class="btn btn-outline-primary rounded-pill px-4 py-2 border-dashed">
+                            <button type="button" class="btn btn-outline-primary rounded-pill px-4 py-2 border-dashed"
+                                onclick="addWarrantyProductRow()">
                                 <i class="bi bi-plus-circle me-2"></i>Add Another Application Type
                             </button>
                         </div>
@@ -243,22 +339,14 @@
                                 class="form-control rounded-3 bg-light border-0 py-2.5" required>
                         </div>
 
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold">Application Type</label>
-                                <input type="text" name="application_type" id="editAppType"
-                                    class="form-control rounded-3 bg-light border-0 py-2.5">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold">Select Product</label>
-                                <select name="product" id="editProduct"
-                                    class="form-select rounded-3 bg-light border-0 py-2.5" required>
-                                    <option value="" disabled>Select Product...</option>
-                                    {% for product in products %}
-                                    <option value="{{ product.id }}">{{ product.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div id="productitems_container">
+                            <!-- Items will be populated by JS -->
+                        </div>
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
+                                onclick="addEditProductItem()">
+                                <i class="bi bi-plus-circle me-1"></i> Add Another Item
+                            </button>
                         </div>
                     </div>
 
@@ -347,25 +435,32 @@
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold">Warranty Details</h5>
+                {% if request.user.role == 'admin' or request.user.role == 'super_admin' %}
+                <button type="button" class="btn btn-outline-warning btn-sm ms-auto me-2" id="btnSetPassword"
+                    style="display: none;">
+                    <i class="bi bi-key me-1"></i> Set Password
+                </button>
+                {% endif %}
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="bg-light rounded-4 p-4 mb-3">
-                    <h6 class="text-uppercase text-primary fw-bold small mb-3">Customer</h6>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Name</span>
-                            <span class="fw-bold text-dark" id="viewName">-</span>
+                <div id="passwordChangeSection" class="bg-warning bg-opacity-10 rounded-4 p-4 mb-3"
+                    style="display: none;">
+                    <h6 class="text-uppercase text-warning fw-bold small mb-3">Set New Password</h6>
+                    <form id="changePasswordForm" method="POST" action="">
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">New Password</label>
+                            <input type="password" name="new_password" class="form-control rounded-3 border-0" required>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Email</span>
-                            <span class="fw-bold text-dark" id="viewEmail">-</span>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Confirm Password</label>
+                            <input type="password" name="confirm_password" class="form-control rounded-3 border-0"
+                                required>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Phone</span>
-                            <span class="fw-bold text-dark" id="viewPhone">-</span>
-                        </div>
-                    </div>
+                        <button type="submit" class="btn btn-warning btn-sm text-white fw-bold rounded-pill px-4">Update
+                            Password</button>
+                    </form>
                 </div>
 
                 <div class="bg-light rounded-4 p-4 mb-3">
@@ -403,31 +498,7 @@
                     </div>
                 </div>
 
-                <div class="bg-light rounded-4 p-4 mb-3">
-                    <h6 class="text-uppercase text-primary fw-bold small mb-3">Product & Vehicle</h6>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Product</span>
-                            <span class="fw-bold text-dark" id="viewProduct">-</span>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Serial No</span>
-                            <span class="fw-bold text-dark" id="viewSerial">-</span>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Vehicle</span>
-                            <span class="fw-bold text-dark" id="viewVehicle">-</span>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Chassis No</span>
-                            <span class="fw-bold text-dark" id="viewChassis">-</span>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <span class="d-block text-muted small">Installation Date</span>
-                            <span class="fw-bold text-dark" id="viewInstallDate">-</span>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div class="text-center" id="viewProofContainer">
                     <a href="#" id="viewProofLink" target="_blank" class="btn btn-outline-primary rounded-pill">
@@ -441,58 +512,103 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function viewWarranty(id, first, last, email, phone, vehicle, chassis, product, serial, appType, installDate, proofUrl, dealerCompany, dealerName, dealerEmail, dealerPhone, dealerAddress, dealerCity, dealerState, dealerZip, dealerCountry) {
-        document.getElementById('viewName').innerText = first + ' ' + last;
-        document.getElementById('viewEmail').innerText = email;
-        document.getElementById('viewPhone').innerText = phone;
-        document.getElementById('viewVehicle').innerText = vehicle;
-        document.getElementById('viewChassis').innerText = chassis;
-        document.getElementById('viewProduct').innerText = product;
-        document.getElementById('viewSerial').innerText = serial;
-        document.getElementById('viewInstallDate').innerText = installDate;
+    function viewWarranty(id, first, last, email, phone, vehicle, chassis, serial, installDate, proofUrl, dealerCompany, dealerName, dealerEmail, dealerPhone, dealerAddress, dealerCity, dealerState, dealerZip, dealerCountry, dealerUserId) {
+        const setText = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        };
 
-        // Dealer Info
-        document.getElementById('viewDealerCompany').innerText = dealerCompany || '-';
-        document.getElementById('viewDealerName').innerText = dealerName || '-';
-        document.getElementById('viewDealerEmail').innerText = dealerEmail || '-';
-        document.getElementById('viewDealerPhone').innerText = dealerPhone || '-';
-        document.getElementById('viewDealerAddress').innerText = dealerAddress || '-';
-        document.getElementById('viewDealerCity').innerText = dealerCity || '';
-        document.getElementById('viewDealerState').innerText = dealerState || '';
-        document.getElementById('viewDealerZip').innerText = dealerZip || '';
-        document.getElementById('viewDealerCountry').innerText = dealerCountry || '';
+        setText('viewCustomerName', first + ' ' + last);
+        setText('viewCustomerEmail', email);
+        setText('viewCustomerPhone', phone);
+        setText('viewVehicle', vehicle);
+        setText('viewChassis', chassis);
+        setText('viewSerial', serial);
+        setText('viewInstallDate', installDate);
 
         const proofLink = document.getElementById('viewProofLink');
-        if (proofUrl) {
-            proofLink.href = proofUrl;
-            document.getElementById('viewProofContainer').style.display = 'block';
-        } else {
-            document.getElementById('viewProofContainer').style.display = 'none';
+        if (proofLink) proofLink.href = proofUrl;
+
+        setText('viewDealerCompany', dealerCompany || '-');
+        setText('viewDealerName', dealerName || '-');
+        setText('viewDealerEmail', dealerEmail || '-');
+        setText('viewDealerPhone', dealerPhone || '-');
+        setText('viewDealerAddress', dealerAddress || '-');
+        setText('viewDealerCity', dealerCity || '');
+        setText('viewDealerState', dealerState || '');
+        setText('viewDealerZip', dealerZip || '');
+        setText('viewDealerCountry', dealerCountry || '');
+
+        // Password Reset Logic
+        const btnSetPassword = document.getElementById('btnSetPassword');
+        const passwordSection = document.getElementById('passwordChangeSection');
+        const passwordForm = document.getElementById('changePasswordForm');
+
+        if (btnSetPassword) {
+            if (dealerUserId) {
+                btnSetPassword.style.display = 'block';
+                passwordForm.action = `/users/change-password/${dealerUserId}/`;
+
+                // Reset section state
+                passwordSection.style.display = 'none';
+
+                btnSetPassword.onclick = function () {
+                    if (passwordSection.style.display === 'none') {
+                        passwordSection.style.display = 'block';
+                    } else {
+                        passwordSection.style.display = 'none';
+                    }
+                };
+            } else {
+                btnSetPassword.style.display = 'none';
+                btnSetPassword.onclick = null;
+            }
         }
 
         new bootstrap.Modal(document.getElementById('viewWarrantyModal')).show();
     }
 
-    function editWarranty(id, first, last, email, phone, vehicle, chassis, productName, serial, appType, installDate, proofUrl) {
+    function addEditProductItem(productName = '', appType = '') {
+        const container = document.getElementById('productitems_container');
+        const mk = `
+            <div class="row g-3 mb-3 product-item-row align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">Application Type</label>
+                    <input type="text" name="application_type[]" class="form-control rounded-3 bg-light border-0 py-2.5" value="${appType}">
+                </div>
+                 <div class="col-md-5">
+                    <label class="form-label small fw-bold">Product Name</label>
+                    <input type="text" name="product[]" class="form-control rounded-3 bg-light border-0 py-2.5" value="${productName}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger w-100 rounded-3 py-2.5" onclick="this.closest('.product-item-row').remove()">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', mk);
+    }
+
+    function editWarranty(id, first, last, email, phone, vehicle, chassis, items, serial, installDate, proofUrl) {
         document.getElementById('editFirstName').value = first;
         document.getElementById('editLastName').value = last;
         document.getElementById('editEmail').value = email;
         document.getElementById('editPhone').value = phone;
         document.getElementById('editVehicle').value = vehicle;
         document.getElementById('editChassis').value = chassis;
-
-        // Select Product by Name
-        const productSelect = document.getElementById('editProduct');
-        for (let i = 0; i < productSelect.options.length; i++) {
-            if (productSelect.options[i].text === productName) {
-                productSelect.selectedIndex = i;
-                break;
-            }
-        }
-
         document.getElementById('editSerial').value = serial;
-        document.getElementById('editAppType').value = appType;
         document.getElementById('editInstallDate').value = installDate;
+
+        // Clear and Populate Items
+        document.getElementById('productitems_container').innerHTML = '';
+        if (items && items.length > 0) {
+            items.forEach(item => {
+                addEditProductItem(item.product, item.app_type);
+            });
+        } else {
+            addEditProductItem(); // Add one empty row
+        }
 
         // Handle Proof Link
         const proofLink = document.getElementById('currentProofLink');
@@ -506,7 +622,7 @@
         }
 
         const form = document.getElementById('editWarrantyForm');
-        form.action = `/dashboard/warranty-registration/edit/${id}/`;
+        form.action = `/warranty-registration/edit/${id}/`;
 
         new bootstrap.Modal(document.getElementById('editWarrantyModal')).show();
     }

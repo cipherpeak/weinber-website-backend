@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProductListAPIView, HomeBannerAPIView,ProductBannerAPIView,AboutBannerAPIView, SiriusBannerAPIView, DaxDetailingBannerAPIView, DaxSolutionsBannerAPIView,AdvantageBannerAPIView, WarrantyRegistrationCreateAPIView
+from .views import ProductListAPIView, HomeBannerAPIView,ProductBannerAPIView,AboutBannerAPIView, SiriusBannerAPIView, DaxDetailingBannerAPIView, DaxSolutionsBannerAPIView,AdvantageBannerAPIView, WarrantyRegistrationCreateAPIView, WarrantyClaimCreateAPIView
 
 urlpatterns = [
     path('products/', ProductListAPIView.as_view(), name='api-product-list'),
@@ -11,5 +11,6 @@ urlpatterns = [
     path('daxsolutions/banner/', DaxSolutionsBannerAPIView.as_view(), name='daxsolutions-banner'),
     path('advantage/banner/', AdvantageBannerAPIView.as_view(), name='advantage-banner'),
     path('warranty-registration/', WarrantyRegistrationCreateAPIView.as_view(), name='api-warranty-registration'),
+    path('warranty-claim/', WarrantyClaimCreateAPIView.as_view(), name='api-warranty-claim'),
 
 ]

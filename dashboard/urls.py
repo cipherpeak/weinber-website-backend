@@ -5,7 +5,7 @@ from .views import (
     AddDealer, DeleteDealer, EditDealer, HeroSectionsView, HomeBannerListView,
     AddHomeBannerSlide, EditHomeBannerSlide, DeleteHomeBannerSlide,
     WarrantyRegistrationList, AddWarrantyRegistration, EditWarrantyRegistration, DeleteWarrantyRegistration,
-    EditProductBanner,EditAboutBanner, EditSiriusBanner, EditDaxDetailingBanner, EditDaxSolutionsBanner,EditAdvantageBanner
+    EditProductBanner,EditAboutBanner, EditSiriusBanner, EditDaxDetailingBanner, EditDaxSolutionsBanner,EditAdvantageBanner, ChangeDealerPassword, WarrantyClaimListView
 )
 
 
@@ -24,7 +24,7 @@ urlpatterns = [
     path('dax-solutions-banner/edit/', EditDaxSolutionsBanner.as_view(), name='edit-dax-solutions-banner'),
     path('advantage-banner/edit/', EditAdvantageBanner.as_view(), name='edit-advantage-banner'),
     path('dealers/', DealerList.as_view(), name='dealers'),
-    path('claims/', WarrantyClaims.as_view(), name='warranty-claims'),
+    path('claims/', WarrantyClaims.as_view(), name='warranty-claims-placeholder'), # Renamed old one if conflicts, or just replace
     
     path('admin-login/', AdminLogin.as_view(), name='admin-login'),
     path('admin-logout/', AdminLogout.as_view(), name='admin-logout'),
@@ -40,4 +40,8 @@ urlpatterns = [
     path('warranty-registration/add/', AddWarrantyRegistration.as_view(), name='add-warranty-registration'),
     path('warranty-registration/edit/<int:reg_id>/', EditWarrantyRegistration.as_view(), name='edit-warranty-registration'),
     path('warranty-registration/delete/<int:reg_id>/', DeleteWarrantyRegistration.as_view(), name='delete-warranty-registration'),
+    path('users/change-password/<int:user_id>/', ChangeDealerPassword.as_view(), name='change-dealer-password'),
+    
+    path('warranty-claims/', WarrantyClaimListView.as_view(), name='warranty-claims-list'),
+    path('warranty-claims/status/<int:claim_id>/', WarrantyClaimListView.as_view(), name='update-claim-status'),
 ]

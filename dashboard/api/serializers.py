@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from dashboard.models import Product, ProductImage, ProductFeature, HomeBannerSlide, ProductBanner,AboutBanner, SiriusBanner, DaxDetailingBanner, DaxSolutionsBanner,AdvantageBanner, WarrantyRegistration, WarrantyProductItem
+from dashboard.models import Product, ProductImage, ProductFeature, HomeBannerSlide, ProductBanner,AboutBanner, SiriusBanner, DaxDetailingBanner, DaxSolutionsBanner,AdvantageBanner, WarrantyRegistration, WarrantyProductItem, WarrantyClaim, WarrantyClaimImage
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -240,3 +240,52 @@ class WarrantyRegistrationSerializer(serializers.ModelSerializer):
             )
         
         return warranty
+
+
+class WarrantyClaimImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WarrantyClaimImage
+        fields = ['id', 'image', 'created_at']
+
+
+class WarrantyClaimSerializer(serializers.ModelSerializer):
+    serial_number = serializers.CharField(write_only=True)
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False
+    )
+    uploaded_images = WarrantyClaimImageSerializer(source='images', many=True, read_only=True)
+    
+    class Meta:
+        model = WarrantyClaim
+        fields = [
+            'id', 
+            'serial_number', 
+            'issue_date', 
+            'issue_description', 
+            'warranty_card_image', 
+            'images',
+            'uploaded_images',
+            'status', 
+            'created_at'
+        ]
+        read_only_fields = ['status', 'created_at']
+
+    def validate_serial_number(self, value):
+        try:
+            registration = WarrantyRegistration.objects.get(serial_number=value)
+            return registration
+        except WarrantyRegistration.DoesNotExist:
+            raise serializers.ValidationError("Invalid serial number. No warranty found.")
+
+    def create(self, validated_data):
+        registration = validated_data.pop('serial_number')
+        images_data = validated_data.pop('images', [])
+        
+        claim = WarrantyClaim.objects.create(warranty=registration, **validated_data)
+        
+        for image in images_data:
+            WarrantyClaimImage.objects.create(claim=claim, image=image)
+            
+        return claim
